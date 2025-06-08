@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "fcf42065-342d-47f7-84ad-2fd99bfcbf20"
+      }
+    },
+    "android": {
+      "package": "com.vzbeats.lifeassistant"
+    }
+  }
+}
