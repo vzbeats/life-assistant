@@ -1,46 +1,56 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { ScrollView, View, ActivityIndicator } from 'react-native';
-import RenderHtml from 'react-native-render-html';
-import { useWindowDimensions } from 'react-native';
-import { ThemeContext, ThemeProvider } from './ThemeContext';
+import React, { useEffect, useState } from 'react';
+import { ThemeProvider, useTheme } from './ThemeContext';
+import { ErrorBoundary } from './ErrorBoundary';
+import { fetchDailyPlanHTML } from './utils/api';
 
-const BACKEND_URL = 'https://us-central1-life-assistant-76e75.cloudfunctions.net/getDailyPlan';
-
-function AppContent() {
-  const { width } = useWindowDimensions();
-  const [html, setHtml] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { theme } = useContext(ThemeContext);
+function InnerApp() {
+  const { theme, toggleTheme } = useTheme();
+  const [htmlContent, setHtmlContent] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(BACKEND_URL)
-      .then(res => res.text())
-      .then(setHtml)
-      .catch(err => {
-        setHtml(`<p>Error fetching daily plan: ${err.message}</p>`);
+    console.log('🚀 useEffect: Fetching daily plan');
+    fetchDailyPlanHTML()
+      .then((html) => {
+        console.log('🎯 Success, setting HTML content');
+        setHtmlContent(html);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        console.error('❌ Failed to fetch:', err);
+        setError('Failed to load daily plan.');
+      });
   }, []);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <ScrollView contentContainerStyle={{ backgroundColor: theme.colors.background, padding: 16 }}>
-      {html && <RenderHtml contentWidth={width} source={{ html }} />}
-    </ScrollView>
+    <div
+      style={{
+        backgroundColor: theme === 'dark' ? '#121212' : '#fff',
+        color: theme === 'dark' ? '#fff' : '#000',
+        minHeight: '100vh',
+        padding: 24,
+        fontFamily: 'sans-serif',
+      }}
+    >
+      <h2 style={{ textAlign: 'center' }}>Toggle Theme</h2>
+      <button onClick={toggleTheme}>Toggle</button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {!error && !htmlContent && <p>Loading daily plan...</p>}
+      {htmlContent && (
+        <div
+          style={{ marginTop: 20 }}
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+        />
+      )}
+    </div>
   );
 }
 
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <InnerApp />
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
